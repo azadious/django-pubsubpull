@@ -7,6 +7,8 @@ from async.api import schedule
 from datetime import timedelta
 from slumber.connector.api import get_model
 from slumber.connector.ua import get
+from slumber.scheme import from_slumber_scheme
+from urlparse import urljoin
 
 
 try:
@@ -34,8 +36,10 @@ def pull_monitor(model_url, callback, delay=dict(minutes=1),
         if latest > floor:
             schedule(callback, args=[item['data']])
     if json.has_key('next_page') and latest > floor:
-        schedule('pubsubpull.async.pull_monitor', args=[model_url, callback],
-            kwargs=dict(delay=delay, floor=floor, page_url=json['next_page']))
+        slumber_model_url = urljoin(from_slumber_scheme("slumber://customer/Customer"), model_url)
+        slubmer_next_page_url = urljoin(from_slumber_scheme("slumber://customer/Customer"), json['next_page'])
+        schedule('pubsubpull.async.pull_monitor', args=[slumber_model_url, callback],
+            kwargs=dict(delay=delay, floor=floor, page_url=slubmer_next_page_url))
         print "Got another page to process", json['next_page'], floor
     if not page_url:
         run_after = timezone.now() + timedelta(**delay)
